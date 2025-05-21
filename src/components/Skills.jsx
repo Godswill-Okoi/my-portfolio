@@ -5,8 +5,11 @@ const Skills = () => {
   const { darkMode } = useTheme();
   const [activeCategory, setActiveCategory] = useState('all');
   const [hoveredSkill, setHoveredSkill] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const sectionRef = useRef(null);
   const skillsContainerRef = useRef(null);
+  const modalRef = useRef(null);
 
   // Skill categories with icons
   const categories = [
@@ -222,10 +225,38 @@ const Skills = () => {
     }
   ];
 
-  // Filter skills based on active category
-  const filteredSkills = activeCategory === 'all'
-    ? skillsData
-    : skillsData.filter(skill => skill.category === activeCategory);
+  // Reset search query when modal closes
+  useEffect(() => {
+    if (!isModalOpen) {
+      setSearchQuery('');
+    }
+  }, [isModalOpen]);
+
+  // Filter skills based on active category and search query
+  const filteredSkills = skillsData
+    .filter(skill => {
+      // Filter by category
+      if (activeCategory !== 'all' && skill.category !== activeCategory) {
+        return false;
+      }
+
+      // Filter by search query (if in modal)
+      if (isModalOpen && searchQuery) {
+        const query = searchQuery.toLowerCase();
+        return (
+          skill.name.toLowerCase().includes(query) ||
+          skill.description.toLowerCase().includes(query) ||
+          skill.technologies?.some(tech => tech.toLowerCase().includes(query))
+        );
+      }
+
+      return true;
+    });
+
+  // Limit the number of skills shown in the main grid
+  const visibleSkillsLimit = 9;
+  const visibleSkills = filteredSkills.slice(0, visibleSkillsLimit);
+  const hasMoreSkills = filteredSkills.length > visibleSkillsLimit;
 
   // Animation for skill bars
   useEffect(() => {
@@ -278,6 +309,53 @@ const Skills = () => {
       }, 100);
     }
   }, [activeCategory]);
+
+  // Close modal when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (modalRef.current && !modalRef.current.contains(event.target)) {
+        setIsModalOpen(false);
+      }
+    };
+
+    if (isModalOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isModalOpen]);
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (isModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, [isModalOpen]);
+
+  // Close modal with Escape key
+  useEffect(() => {
+    const handleEscKey = (event) => {
+      if (event.key === 'Escape') {
+        setIsModalOpen(false);
+      }
+    };
+
+    if (isModalOpen) {
+      window.addEventListener('keydown', handleEscKey);
+    }
+
+    return () => {
+      window.removeEventListener('keydown', handleEscKey);
+    };
+  }, [isModalOpen]);
 
   return (
     <section id="skills" className="py-24 bg-white dark:bg-gray-800 relative overflow-hidden">
@@ -332,7 +410,7 @@ const Skills = () => {
               skillsContainerRef.current = el;
             }}
           >
-            {filteredSkills.map((skill, index) => (
+            {visibleSkills.map((skill, index) => (
               <div
                 key={index}
                 className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-100 dark:border-gray-700 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl"
@@ -376,6 +454,21 @@ const Skills = () => {
             ))}
           </div>
 
+          {/* See More Button */}
+          {hasMoreSkills && (
+            <div className="flex justify-center mt-12">
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
+              >
+                <span>See More Skills</span>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          )}
+
           {/* Additional section: Learning Now */}
           <div className="mt-20">
             <div className="text-center mb-10">
@@ -413,6 +506,133 @@ const Skills = () => {
           </div>
         </div>
       </div>
+
+      {/* Skills Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div
+            ref={modalRef}
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-6xl max-h-[90vh] overflow-y-auto"
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">All Skills</h3>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <div className="relative w-full max-w-md mx-auto mb-4">
+                <input
+                  type="text"
+                  placeholder="Search skills..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full px-4 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap justify-center mb-8 gap-2">
+              {categories.map((category) => (
+                <button
+                  key={category.id}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    activeCategory === category.id
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                  onClick={() => setActiveCategory(category.id)}
+                >
+                  {category.name}
+                </button>
+              ))}
+            </div>
+
+            {filteredSkills.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredSkills.map((skill, index) => (
+                  <div
+                    key={index}
+                    className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-5 border border-gray-100 dark:border-gray-700 hover:shadow-lg transition-shadow"
+                  >
+                    <div className="flex items-center mb-4">
+                      <div
+                        className="w-10 h-10 rounded-lg flex items-center justify-center mr-3"
+                        style={{
+                          backgroundColor: `${skill.color}20`,
+                          color: skill.color
+                        }}
+                      >
+                        <img src={skill.icon} alt={skill.name} className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h4 className="text-base font-bold text-gray-900 dark:text-white">{skill.name}</h4>
+                        <p className="text-xs text-indigo-600 dark:text-indigo-400">{skill.level}% Proficiency</p>
+                      </div>
+                    </div>
+
+                    <div className="mb-3">
+                      <div className="relative w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${skill.level}%`,
+                            backgroundColor: skill.color,
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {skill.description}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h4 className="text-xl font-bold text-gray-700 dark:text-gray-300 mb-2">No skills found</h4>
+                <p className="text-gray-500 dark:text-gray-400">
+                  Try adjusting your search or filter criteria
+                </p>
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setActiveCategory('all');
+                  }}
+                  className="mt-4 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+                >
+                  Reset Filters
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </section>
   );
 };

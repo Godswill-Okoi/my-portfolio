@@ -134,7 +134,7 @@ const Hero = () => {
       {/* Grid pattern overlay */}
       <div className="absolute inset-0 bg-grid-pattern opacity-[0.03] dark:opacity-[0.05]"></div>
 
-      <div className="container mx-auto px-4 z-10">
+      <div className="container mx-auto px-4 py-24 z-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Left column - Text content */}
           <div className="parallax" data-speed="0.1">
@@ -200,9 +200,9 @@ const Hero = () => {
               {/* Main image with gradient border */}
               <div className="relative z-10 rounded-2xl overflow-hidden p-1 bg-gradient-to-br from-indigo-600 to-purple-600 dark:from-indigo-500 dark:to-purple-500 shadow-2xl">
                 <img
-                  src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=774&q=80"
+                  src="/images/Godswill.png"
                   alt="Developer"
-                  className="w-full h-full object-cover rounded-xl"
+                  className="object-cover rounded-xl w-full h-full"
                 />
               </div>
 
